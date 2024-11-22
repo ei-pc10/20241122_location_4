@@ -8,7 +8,7 @@
     // Android判定
     const isAndroid = /Android/i.test(navigator.userAgent);
     const normalScale = isAndroid ? 4.5 : 5;  // Androidの場合はスケールを小さく
-    const smallScale = isAndroid ? 3 : 3;    // 小スケール
+    const smallScale = isAndroid ? 1.8 : 2.2;    // 小スケール
 
     // 距離計算用の関数
     function calculateDistance(lat1, lon1, lat2, lon2) {
