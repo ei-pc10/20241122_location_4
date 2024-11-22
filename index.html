@@ -1,0 +1,65 @@
+<script>
+    // 特定の表示位置（緯度と経度）
+    const targetLatitude = 37.95623964531757; // 短大僕の机の緯度経度
+    const targetLongitude = 139.3371717973987;
+    const modelEntity = document.getElementById('modelEntity');
+    const locationDisplay = document.getElementById('locationDisplay');
+
+    // Android判定
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const normalScale = isAndroid ? 4.5 : 5;  // Androidの場合はスケールを小さく
+    const smallScale = isAndroid ? 3 : 3;    // 小スケール
+
+    // 距離計算用の関数
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // 地球の半径（メートル）
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    // 位置情報を取得し、画面に現在地と距離を表示
+    if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition(function(position) {
+            const userLatitude = position.coords.latitude;
+            const userLongitude = position.coords.longitude;
+
+            // ターゲットとの距離を計算
+            const distance = calculateDistance(userLatitude, userLongitude, targetLatitude, targetLongitude);
+
+            // ユーザーの現在地と距離を表示エリアに更新
+            locationDisplay.innerHTML = `
+                <strong>現在地</strong><br>
+                緯度: ${userLatitude.toFixed(6)}<br>
+                経度: ${userLongitude.toFixed(6)}<br>
+                <strong>目標までの距離:</strong> ${distance.toFixed(1)} m
+            `;
+
+            // 距離に応じてスケールと表示状態を更新
+            if (distance <= 50) {
+                modelEntity.setAttribute('gps-entity-place', `latitude: ${targetLatitude}; longitude: ${targetLongitude};`);
+                modelEntity.object3D.scale.set(normalScale, normalScale, normalScale);
+                modelEntity.setAttribute('visible', 'true');
+                console.log("50メートル未満: 通常スケールで表示します。");
+            } else if (distance <= 100) {
+                modelEntity.setAttribute('gps-entity-place', `latitude: ${targetLatitude}; longitude: ${targetLongitude};`);
+                modelEntity.object3D.scale.set(smallScale, smallScale, smallScale);
+                modelEntity.setAttribute('visible', 'true');
+                console.log("50〜100メートル: 小スケールで表示します。");
+            } else {
+                modelEntity.setAttribute('visible', 'false');
+                console.log("100メートル以上: 非表示にします。");
+            }
+        }, function(error) {
+            console.error("位置情報の取得に失敗しました:", error);
+            locationDisplay.innerHTML = "位置情報の取得に失敗しました";
+        }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 5000 });
+    } else {
+        console.error("このブラウザでは位置情報がサポートされていません");
+        locationDisplay.innerHTML = "位置情報がサポートされていません";
+    }
+</script>
