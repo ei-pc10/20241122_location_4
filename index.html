@@ -1,65 +1,112 @@
-<script>
-    // 特定の表示位置（緯度と経度）
-    const targetLatitude = 37.95623964531757; // 短大僕の机の緯度経度
-    const targetLongitude = 139.3371717973987;
-    const modelEntity = document.getElementById('modelEntity');
-    const locationDisplay = document.getElementById('locationDisplay');
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Location-based AR.js demo</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js'></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
+    <style>
+        #locationDisplay {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <!-- 緯度・経度と距離の表示エリア -->
+    <div id="locationDisplay">位置情報を取得中...</div>
 
-    // Android判定
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    const normalScale = isAndroid ? 4.5 : 5;  // Androidの場合はスケールを小さく
-    const smallScale = isAndroid ? 1.8 : 2.2;    // 小スケール
+    <a-scene vr-mode-ui="enabled: false" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <!-- 3Dモデルのエンティティ（初期状態では非表示） -->
+        <a-entity id="modelEntity" 
+                  gltf-model="https://github.com/ei-pc10/20241101_model/raw/refs/heads/main/model_5.glb" 
+                  position="0 -3 -3" 
+                  scale="5 5 5"
+                  look-at="[camera]"
+                  visible="false"
+                  animation-mixer>
+        </a-entity>
 
-    // 距離計算用の関数
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371000; // 地球の半径（メートル）
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    }
+        <!-- カメラと位置情報 -->
+        <a-camera gps-camera="minDistance:5; maxDistance:50"></a-camera>
+    </a-scene>
 
-    // 位置情報を取得し、画面に現在地と距離を表示
-    if ("geolocation" in navigator) {
-        navigator.geolocation.watchPosition(function(position) {
-            const userLatitude = position.coords.latitude;
-            const userLongitude = position.coords.longitude;
+    <script>
+        // 特定の表示位置（緯度と経度）
+        const targetLatitude = 37.95623964531757; // 短大僕の机の緯度経度
+        const targetLongitude = 139.3371717973987;
+        const modelEntity = document.getElementById('modelEntity');
+        const locationDisplay = document.getElementById('locationDisplay');
 
-            // ターゲットとの距離を計算
-            const distance = calculateDistance(userLatitude, userLongitude, targetLatitude, targetLongitude);
+        // Android判定
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const normalScale = isAndroid ? 4.5 : 5;  // Androidの場合はスケールを小さく
+        const smallScale = isAndroid ? 3 : 3;    // 小スケール
 
-            // ユーザーの現在地と距離を表示エリアに更新
-            locationDisplay.innerHTML = `
-                <strong>現在地</strong><br>
-                緯度: ${userLatitude.toFixed(6)}<br>
-                経度: ${userLongitude.toFixed(6)}<br>
-                <strong>目標までの距離:</strong> ${distance.toFixed(1)} m
-            `;
+        // 距離計算用の関数
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // 地球の半径（メートル）
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
 
-            // 距離に応じてスケールと表示状態を更新
-            if (distance <= 50) {
-                modelEntity.setAttribute('gps-entity-place', `latitude: ${targetLatitude}; longitude: ${targetLongitude};`);
-                modelEntity.object3D.scale.set(normalScale, normalScale, normalScale);
-                modelEntity.setAttribute('visible', 'true');
-                console.log("50メートル未満: 通常スケールで表示します。");
-            } else if (distance <= 100) {
-                modelEntity.setAttribute('gps-entity-place', `latitude: ${targetLatitude}; longitude: ${targetLongitude};`);
-                modelEntity.object3D.scale.set(smallScale, smallScale, smallScale);
-                modelEntity.setAttribute('visible', 'true');
-                console.log("50〜100メートル: 小スケールで表示します。");
-            } else {
-                modelEntity.setAttribute('visible', 'false');
-                console.log("100メートル以上: 非表示にします。");
-            }
-        }, function(error) {
-            console.error("位置情報の取得に失敗しました:", error);
-            locationDisplay.innerHTML = "位置情報の取得に失敗しました";
-        }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 5000 });
-    } else {
-        console.error("このブラウザでは位置情報がサポートされていません");
-        locationDisplay.innerHTML = "位置情報がサポートされていません";
-    }
-</script>
+        // 位置情報を取得し、画面に現在地と距離を表示
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(function(position) {
+                const userLatitude = position.coords.latitude;
+                const userLongitude = position.coords.longitude;
+
+                // ターゲットとの距離を計算
+                const distance = calculateDistance(userLatitude, userLongitude, targetLatitude, targetLongitude);
+
+                // ユーザーの現在地と距離を表示エリアに更新
+                locationDisplay.innerHTML = `
+                    <strong>現在地</strong><br>
+                    緯度: ${userLatitude.toFixed(6)}<br>
+                    経度: ${userLongitude.toFixed(6)}<br>
+                    <strong>目標までの距離:</strong> ${distance.toFixed(1)} m
+                `;
+
+                // 距離に応じてスケールと表示状態を更新
+                if (distance <= 50) {
+                    modelEntity.setAttribute('gps-entity-place', `latitude: ${targetLatitude}; longitude: ${targetLongitude};`);
+                    modelEntity.object3D.scale.set(normalScale, normalScale, normalScale);
+                    modelEntity.setAttribute('visible', 'true');
+                    console.log("50メートル未満: 通常スケールで表示します。");
+                } else if (distance <= 100) {
+                    modelEntity.setAttribute('gps-entity-place', `latitude: ${targetLatitude}; longitude: ${targetLongitude};`);
+                    modelEntity.object3D.scale.set(smallScale, smallScale, smallScale);
+                    modelEntity.setAttribute('visible', 'true');
+                    console.log("50〜100メートル: 小スケールで表示します。");
+                } else {
+                    modelEntity.setAttribute('visible', 'false');
+                    console.log("100メートル以上: 非表示にします。");
+                }
+            }, function(error) {
+                console.error("位置情報の取得に失敗しました:", error);
+                locationDisplay.innerHTML = "位置情報の取得に失敗しました";
+            }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 5000 });
+        } else {
+            console.error("このブラウザでは位置情報がサポートされていません");
+            locationDisplay.innerHTML = "位置情報がサポートされていません";
+        }
+    </script>
+</body>
+</html>
+https://github.com/ei-pc10/20241101_model/raw/refs/heads/main/model_5.glb
